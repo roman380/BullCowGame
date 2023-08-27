@@ -184,6 +184,8 @@ struct Game
 		} else 
 		if(Answer.Bulls + Answer.Cows == Combination::ValueSize)
 		{
+			for(auto&& Element: CharacterStates)
+				Element = CharacterState::Absent;
 			for(auto&& Element: Question.Value)
 				CharacterStates[Element - '0'] = CharacterState::Present;
 		}

@@ -167,8 +167,11 @@ int main()
                 std::ostringstream Stream;
                 Stream << Question.ToString() << " - " << Answer.ToString() << " - " << TryAnswer.ToString() << " ";
                 if(Answer != TryAnswer)
+                {
+                    Stream << "\033[31m"; // Red
+                    Stream << "\033[7m"; // Invert
                     Stream << "mismatch";
-                else
+                } else
                     Stream << "match";
                 Stream << "\033[0m"; // Default
                 std::cout << Stream.str() << std::endl;
