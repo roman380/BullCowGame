@@ -166,7 +166,7 @@ int main()
             Combination TryQuestion;
             if(!TryQuestion.TryParse(Input.substr(1)))
             {
-                std::cout << "Not a valid question " << Input.substr(1) << std::endl;
+                std::cout << "Not a valid combination " << Input.substr(1) << std::endl;
                 continue;
             }
             std::cout << "--" << std::endl;
@@ -193,13 +193,13 @@ int main()
         Combination Question;
         if(!Question.TryParse(Input))
         {
-            std::cout << "Not a valid question " << Input << std::endl;
+            std::cout << "Not a valid combination " << Input << std::endl;
             continue;
         }
         auto const Answer = Game.Secret.Ask(Question);
         Game.QuestionVector.emplace_back(Question);
         if(Answer.Bulls != Question.ValueSize)
-            Game.AutomaticUpdateCharacterStates(Question);
+            Game.AutomaticUpdateCharacterStates();
         Game.MatchVector = OutputBoard();
         if(Answer.Bulls == Question.ValueSize)
         {

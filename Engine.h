@@ -134,6 +134,10 @@ struct Combination
 		}
 		return Result;
 	}
+	bool Has(char Value) const
+	{
+		return std::any_of(std::cbegin(this->Value), std::cend(this->Value), [=] (auto Element) { return Element == Value; });
+	}
 
 	static size_t constexpr const ValueSize = 4;
 	char Value[ValueSize];
@@ -174,20 +178,91 @@ struct Game
 			}
 		}
 	}
-	void AutomaticUpdateCharacterStates(Combination const& Question)
+	static unsigned int DistinctCount(Combination const& QuestionA, Combination const& QuestionB)
 	{
-		auto const Answer = Secret.Ask(Question);
-		if(Answer.Bulls == 0 && Answer.Cows == 0)
+		unsigned int Count[10] { };
+		for(auto&& Value: QuestionA.Value)
+			Count[Value - '0']++;
+		for(auto&& Value: QuestionB.Value)
+			Count[Value - '0']++;
+		return static_cast<unsigned int>(std::count_if(std::cbegin(Count), std::cend(Count), [] (auto Element) { return Element > 0; }));
+	}
+	void AutomaticUpdateCharacterStates()
+	{
+		for(auto&& Question: QuestionVector)
 		{
-			for(auto&& Element: Question.Value)
-				CharacterStates[Element - '0'] = CharacterState::Absent;
-		} else 
-		if(Answer.Bulls + Answer.Cows == Combination::ValueSize)
+			auto const Answer = Secret.Ask(Question);
+			if(Answer.Bulls == 0 && Answer.Cows == 0)
+			{
+				for(auto&& Element: Question.Value)
+					CharacterStates[Element - '0'] = CharacterState::Absent;
+			} else 
+			if(Answer.Bulls + Answer.Cows == Combination::ValueSize)
+			{
+				for(auto&& Element: CharacterStates)
+					Element = CharacterState::Absent;
+				for(auto&& Element: Question.Value)
+					CharacterStates[Element - '0'] = CharacterState::Present;
+			}
+		}
+		if(QuestionVector.size() >= 2)
 		{
-			for(auto&& Element: CharacterStates)
-				Element = CharacterState::Absent;
-			for(auto&& Element: Question.Value)
-				CharacterStates[Element - '0'] = CharacterState::Present;
+			for(size_t IndexA = 0; IndexA < QuestionVector.size() - 1; IndexA++)
+				for(size_t IndexB = IndexA + 1; IndexB < QuestionVector.size(); IndexB++)
+				{
+					auto const& QuestionA = QuestionVector[IndexA];
+					auto const& QuestionB = QuestionVector[IndexB];
+					auto const AnswerA = Secret.Ask(QuestionA);
+					auto const AnswerB = Secret.Ask(QuestionB);
+					auto const Distinct = DistinctCount(QuestionA, QuestionB);
+					if(Distinct == Combination::ValueSize * 2)
+					{
+						auto const Count = AnswerA.Bulls + AnswerA.Cows + AnswerB.Bulls + AnswerB.Cows;
+						if(Count == Combination::ValueSize)
+						{
+							for(char Character = '0'; Character <= '9'; Character++)
+								if(!QuestionA.Has(Character) && !QuestionB.Has(Character))
+									CharacterStates[Character - '0'] = CharacterState::Absent;
+						} else
+						if(Count == 10 - Combination::ValueSize * 2)
+						{
+							for(char Character = '0'; Character <= '9'; Character++)
+								if(!QuestionA.Has(Character) && !QuestionB.Has(Character))
+									CharacterStates[Character - '0'] = CharacterState::Present;
+						}
+					} else
+					if(Distinct == Combination::ValueSize + 1)
+					{
+						// SUGG: Same for difference of 2
+						if(AnswerA.Bulls + AnswerA.Cows + 1 == AnswerB.Bulls + AnswerB.Cows) // A's difference is absent, B's difference is present
+						{
+							for(char Character = '0'; Character <= '9'; Character++)
+								if(QuestionA.Has(Character) && !QuestionB.Has(Character))
+									CharacterStates[Character - '0'] = CharacterState::Absent;
+								else if(!QuestionA.Has(Character) && QuestionB.Has(Character))
+									CharacterStates[Character - '0'] = CharacterState::Present;
+						} else
+						if(AnswerA.Bulls + AnswerA.Cows == AnswerB.Bulls + AnswerB.Cows + 1) // See above, vice versa
+						{
+							for(char Character = '0'; Character <= '9'; Character++)
+								if(QuestionA.Has(Character) && !QuestionB.Has(Character))
+									CharacterStates[Character - '0'] = CharacterState::Present;
+								else if(!QuestionA.Has(Character) && QuestionB.Has(Character))
+									CharacterStates[Character - '0'] = CharacterState::Absent;
+						} else
+						if(AnswerA.Bulls + AnswerA.Cows == AnswerB.Bulls + AnswerB.Cows && AnswerA.Bulls + AnswerA.Cows == Combination::ValueSize - 1) // 3 & 3 -> can't have the difference
+						{
+							for(char Character = '0'; Character <= '9'; Character++)
+							{
+								auto const Count = (QuestionA.Has(Character) ? 1 : 0) + (QuestionB.Has(Character) ? 1 : 0);
+								if(Count == 1)
+									CharacterStates[Character - '0'] = CharacterState::Absent;
+								else if(Count == 2)
+									CharacterStates[Character - '0'] = CharacterState::Present;
+							}
+						}
+					}
+				}
 		}
 	}
 	bool DefaultCharacterStates() const
