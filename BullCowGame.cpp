@@ -112,6 +112,44 @@ int main()
                     std::cout << "  " << Match.ToString() << std::endl;
             continue;
         }
+        if(Input.size() == 1 + Combination::ValueSize && Input[0] == '?') // Remaining matches, filtered, if 16 or less
+        {
+            std::optional<char> Pattern[Combination::ValueSize];
+            bool Invalid = false;
+            for(size_t Index = 0; Index < Combination::ValueSize; Index++)
+            {
+                auto const Character = Input[1 + Index];
+                if(Character == '_')
+                    continue;
+                if(!Combination::ValidCharacter(Character))
+                {
+                    Invalid = true;
+                    break;
+                }
+                Pattern[Index] = Character;
+            }
+            if(Invalid)
+                continue;
+            std::vector<Combination> MatchVector;
+            for(auto&& Combination: Game.MatchVector)
+            {
+                bool Match = true;
+                for(size_t Index = 0; Index < Combination::ValueSize && Match; Index++)
+                {
+                    if(!Pattern[Index].has_value())
+                        continue;
+                    Match &= Pattern[Index].value() == Combination.Value[Index];
+                }
+                if(Match)
+                    MatchVector.emplace_back(Combination);
+            }
+            std::cout << MatchVector.size() << " remaining" << std::endl;
+            static size_t constexpr const MatchSizeThreshold = 16;
+            if(MatchVector.size() <= MatchSizeThreshold)
+                for(auto&& Match: MatchVector)
+                    std::cout << "  " << Match.ToString() << std::endl;
+            continue;
+        }
         if(Input == "*") // Reset character states
         {
             Game.ResetCharacterStates();
