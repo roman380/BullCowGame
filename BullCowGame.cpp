@@ -185,12 +185,12 @@ int main()
         auto const Answer = Game.Secret.Ask(Question);
         Game.QuestionVector.emplace_back(Question);
         Game.MatchVector = OutputBoard();
-        Game.AutomaticUpdateCharacterStates(Question);
         if(Answer.Bulls == Question.ValueSize)
         {
             Game.Reset();
             std::cout << "-- Done, new game" << std::endl;
-        }
+        } else
+            Game.AutomaticUpdateCharacterStates(Question);
     }
     return 0;
 }
