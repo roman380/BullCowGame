@@ -72,8 +72,11 @@ int main()
             std::ostringstream Stream;
             Stream << ++QuestionIndex << ": ";
             Stream << Question.ToString(Colorize) << " - " << Answer.ToString();
-            Stream << "\033[36m"; // Cyan
-            Stream << " (" << NewMatchVector.size() << ")";
+            if(Answer.Bulls != Question.ValueSize)
+            {
+                Stream << "\033[36m"; // Cyan
+                Stream << " (" << NewMatchVector.size() << ")";
+            }
             Stream << "\033[0m"; // Default
             std::cout << Stream.str() << std::endl;
             MatchVector = std::move(NewMatchVector);
@@ -109,6 +112,12 @@ int main()
                     std::cout << "  " << Match.ToString() << std::endl;
             continue;
         }
+        if(Input == "*") // Reset character states
+        {
+            Game.ResetCharacterStates();
+            OutputBoard();
+            continue;
+        }
         if(strchr("+-*", Input.substr(0, 1)[0])) // Update character states
         {
             for(size_t Position = 0; ; Position += 2)
@@ -142,12 +151,6 @@ int main()
             auto const Character = Input.substr(1, 1)[0];
             if(Combination::ValidCharacter(Character))
                 Game.CharacterStates[Character - '0'] = CharacterState::Default;
-            OutputBoard();
-            continue;
-        }
-        if(Input == "*") // Reset character states
-        {
-            Game.ResetCharacterStates();
             OutputBoard();
             continue;
         }
@@ -195,13 +198,14 @@ int main()
         }
         auto const Answer = Game.Secret.Ask(Question);
         Game.QuestionVector.emplace_back(Question);
+        if(Answer.Bulls != Question.ValueSize)
+            Game.AutomaticUpdateCharacterStates(Question);
         Game.MatchVector = OutputBoard();
         if(Answer.Bulls == Question.ValueSize)
         {
             Game.Reset();
             std::cout << "-- Done, new game" << std::endl;
-        } else
-            Game.AutomaticUpdateCharacterStates(Question);
+        }
     }
     return 0;
 }
