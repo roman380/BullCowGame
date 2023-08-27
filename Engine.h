@@ -249,17 +249,6 @@ struct Game
 									CharacterStates[Character - '0'] = CharacterState::Present;
 								else if(!QuestionA.Has(Character) && QuestionB.Has(Character))
 									CharacterStates[Character - '0'] = CharacterState::Absent;
-						} else
-						if(AnswerA.Bulls + AnswerA.Cows == AnswerB.Bulls + AnswerB.Cows && AnswerA.Bulls + AnswerA.Cows == Combination::ValueSize - 1) // 3 & 3 -> can't have the difference
-						{
-							for(char Character = '0'; Character <= '9'; Character++)
-							{
-								auto const Count = (QuestionA.Has(Character) ? 1 : 0) + (QuestionB.Has(Character) ? 1 : 0);
-								if(Count == 1)
-									CharacterStates[Character - '0'] = CharacterState::Absent;
-								else if(Count == 2)
-									CharacterStates[Character - '0'] = CharacterState::Present;
-							}
 						}
 					}
 				}
