@@ -3,8 +3,11 @@
 #include <cassert>
 #include <vector>
 #include <string>
+#include <sstream>
 #include <algorithm>
 #include <utility>
+#include <functional>
+#include <optional>
 
 struct Answer
 {
@@ -28,16 +31,16 @@ struct Answer
 	unsigned int Cows = 0;
 };
 
-struct Number
+struct Combination
 {
-	bool operator==(Number const& Value) const
+	bool operator==(Combination const& Value) const
 	{
 		for(size_t Index = 0; Index < std::size(this->Value); Index++)
 			if(this->Value[Index] != Value.Value[Index])
 				return false;
 		return true;
 	}
-	bool operator!=(Number const& Value) const
+	bool operator!=(Combination const& Value) const
 	{
 		return !(*this == Value);
 	}
@@ -57,12 +60,24 @@ struct Number
 		Value[ValueSize] = 0;
 		return Value;
 	}
+	std::string ToString(std::function<std::string(std::optional<size_t> Index, char Value)> Colorize) const
+	{
+		assert(Colorize);
+		std::ostringstream Stream;
+		for(size_t Index = 0; Index < std::size(Value); Index++)
+			Stream << Colorize(Index, Value[Index]);
+		return Stream.str();
+	}
+	static bool ValidCharacter(char Value)
+	{
+		return Value >= '0' && Value <= '9';
+	}
 	bool Valid() const
 	{
 		static_assert(ValueSize == sizeof Value / sizeof *Value);
 		static_assert(ValueSize <= 10);
 		for(auto&& Element : Value)
-			if(Element < '0' || Element > '9')
+			if(!ValidCharacter(Element))
 				return false;
 		for(size_t IndexA = 0; IndexA < std::size(Value) - 1; IndexA++)
 			for(size_t IndexB = IndexA + 1; IndexB < std::size(Value); IndexB++)
@@ -80,7 +95,7 @@ struct Number
 				break;
 		}
 	}
-	Answer Ask(Number const& Question) const
+	Answer Ask(Combination const& Question) const
 	{
 		assert(Valid() && Question.Valid());
 		Answer Answer;
@@ -94,10 +109,10 @@ struct Number
 		assert(Answer.Bulls + Answer.Cows <= std::size(Value));
 		return Answer;
 	}
-	static std::vector<Number> All()
+	static std::vector<Combination> All()
 	{
-		std::vector<Number> Result;
-		Number Value;
+		std::vector<Combination> Result;
+		Combination Value;
 		for(size_t Index = 0; Index < ValueSize; Index++)
 			Value.Value[Index] = static_cast<char>('0' + Index);
 		assert(Value.Valid());
@@ -124,16 +139,62 @@ struct Number
 	char Value[ValueSize];
 };
 
+enum class CharacterState
+{
+	Default,
+	Absent,
+	Present,
+};
+
 struct Game
 {
 	void Reset()
 	{
 		Secret.Create();
 		QuestionVector.clear();
-		MatchVector = Number::All();
+		MatchVector = Combination::All();
+		ResetCharacterStates();
+	}
+	void ResetCharacterStates()
+	{
+		for(auto&& Element: CharacterStates)
+			Element = CharacterState::Default;
+		for(auto&& Question: QuestionVector)
+		{
+			auto const Answer = Secret.Ask(Question);
+			if(Answer.Bulls == 0 && Answer.Cows == 0)
+			{
+				for(auto&& Element: Question.Value)
+					CharacterStates[Element - '0'] = CharacterState::Absent;
+			} else 
+			if(Answer.Bulls + Answer.Cows == Combination::ValueSize)
+			{
+				for(auto&& Element: Question.Value)
+					CharacterStates[Element - '0'] = CharacterState::Present;
+			}
+		}
+	}
+	void AutomaticUpdateCharacterStates(Combination const& Question)
+	{
+		auto const Answer = Secret.Ask(Question);
+		if(Answer.Bulls == 0 && Answer.Cows == 0)
+		{
+			for(auto&& Element: Question.Value)
+				CharacterStates[Element - '0'] = CharacterState::Absent;
+		} else 
+		if(Answer.Bulls + Answer.Cows == Combination::ValueSize)
+		{
+			for(auto&& Element: Question.Value)
+				CharacterStates[Element - '0'] = CharacterState::Present;
+		}
+	}
+	bool DefaultCharacterStates() const
+	{
+		return std::all_of(std::cbegin(CharacterStates), std::cend(CharacterStates), [] (auto&& Element) { return Element == CharacterState::Default; });
 	}
 
-	Number Secret;
-	std::vector<Number> QuestionVector;
-	std::vector<Number> MatchVector;
+	Combination Secret;
+	std::vector<Combination> QuestionVector;
+	std::vector<Combination> MatchVector;
+	CharacterState CharacterStates[10];
 };
