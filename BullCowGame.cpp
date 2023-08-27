@@ -18,10 +18,11 @@ int main()
     Game Game;
     Game.Reset();
 
-    std::cout << "q to quit, r to restart" << std::endl;
+    std::cout << "q to quit, r to restart, u to undo" << std::endl;
     std::cout << "? shows remaining, ?? shows the secret" << std::endl;
     std::cout << "+N, -N marks as present or absent, *N resets, * resets all" << std::endl;
     std::cout << "/<number> tries a combination against previous attempts" << std::endl;
+    std::cout << std::endl;
     std::cout << "-- Go ahead" << std::endl;
 
     auto const Colorize = [&] (std::optional<size_t>, char Value)
@@ -147,6 +148,13 @@ int main()
         if(Input == "*") // Reset character states
         {
             Game.ResetCharacterStates();
+            OutputBoard();
+            continue;
+        }
+        if(Input == "u") // Undo
+        {
+            if(!Game.QuestionVector.empty())
+                Game.QuestionVector.erase(Game.QuestionVector.end() - 1);
             OutputBoard();
             continue;
         }
