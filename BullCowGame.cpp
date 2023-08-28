@@ -19,7 +19,7 @@ int main()
     Game Game;
     Game.Reset();
 
-    std::cout << "q to quit, r to restart, u to undo" << std::endl;
+    std::cout << "q to quit, r to restart, u to undo, h for hint" << std::endl;
     std::cout << "? shows remaining, ?? shows the secret" << std::endl;
     std::cout << "+N, -N marks as present or absent, *N resets, * resets all" << std::endl;
     std::cout << "/<number> tries a combination against previous attempts" << std::endl;
@@ -49,7 +49,7 @@ int main()
         return Stream.str();
     };
 
-    auto const OutputBoard = [&]
+    auto const OutputBoard = [&] (std::function<std::string(Combination const&)> QuestionComment = nullptr)
     {
         std::cout << "--" << std::endl;
         if(!Game.DefaultCharacterStates())
@@ -77,6 +77,15 @@ int main()
             {
                 Stream << "\033[36m"; // Cyan
                 Stream << " (" << NewMatchVector.size() << ")";
+            }
+            if(QuestionComment)
+            {
+                auto const Comment = QuestionComment(Question);
+                if(!Comment.empty())
+                {
+                    Stream << "\033[36m"; // Cyan
+                    Stream << " // " << Comment;
+                }
             }
             Stream << "\033[0m"; // Default
             std::cout << Stream.str() << std::endl;
@@ -107,8 +116,7 @@ int main()
         if(Input == "?") // Remaining matches, if 16 or less
         {
             std::cout << Game.MatchVector.size() << " remaining" << std::endl;
-            static size_t constexpr const MatchSizeThreshold = 16;
-            if(Game.MatchVector.size() <= MatchSizeThreshold)
+            if(Game.MatchVector.size() <= 24)
                 for(auto&& Match: Game.MatchVector)
                 {
                     std::ostringstream Stream;
@@ -152,8 +160,7 @@ int main()
                     MatchVector.emplace_back(Combination);
             }
             std::cout << MatchVector.size() << " remaining" << std::endl;
-            static size_t constexpr const MatchSizeThreshold = 16;
-            if(MatchVector.size() <= MatchSizeThreshold)
+            if(MatchVector.size() <= 24)
                 for(auto&& Match: MatchVector)
                 {
                     std::ostringstream Stream;
@@ -198,6 +205,25 @@ int main()
             OutputBoard();
             continue;
         }
+        if(Input == "h") // Hint
+        {
+            if(!Game.QuestionVector.empty() && !Game.MatchVector.empty())
+            {
+                std::vector<double> MeritVector;
+                MeritVector.reserve(Game.MatchVector.size());
+                std::for_each(Game.MatchVector.cbegin(), Game.MatchVector.cend(), [&] (auto&& Question) { MeritVector.emplace_back(Game.AverageSameAnswer(Question)); });
+                auto const MeritIterator = std::min_element(MeritVector.cbegin(), MeritVector.cend());
+                assert(MeritIterator != MeritVector.cend());
+                auto const& Question = Game.MatchVector[std::distance(MeritVector.cbegin(), MeritIterator)];
+                std::ostringstream Stream;
+                Stream << "Try " << Question.ToString();
+                Stream << "\033[36m"; // Cyan
+                Stream << " -> " << std::fixed << std::setprecision(2) << Game.AverageSameAnswer(Question);
+                Stream << "\033[0m"; // Default
+                std::cout << Stream.str() << std::endl;
+            }
+            continue;
+        }
         if(Input.size() == Combination::ValueSize + 1 && Input[Combination::ValueSize] == '/') // Try
         {
             Combination TryQuestion;
@@ -239,10 +265,28 @@ int main()
             continue;
         }
         auto const Answer = Game.Secret.Ask(Question);
+        std::string Comment;
+        if(Answer.Bulls != Combination::ValueSize && !Game.QuestionVector.empty() && Game.MatchVector.size() < 256)
+        {
+            std::ostringstream Stream;
+            Stream << "expected " << std::fixed << std::setprecision(2) << Game.AverageSameAnswer(Question);
+            if(Game.MatchVector.size() < 128)
+            {
+                // WARN: This is not quite accurate, best question does not have to belong to one of the potentially possible combinations
+                std::vector<double> MeritVector;
+                MeritVector.reserve(Game.MatchVector.size());
+                std::for_each(Game.MatchVector.cbegin(), Game.MatchVector.cend(), [&] (auto&& Question) { MeritVector.emplace_back(Game.AverageSameAnswer(Question)); });
+                auto const MeritIterator = std::min_element(MeritVector.cbegin(), MeritVector.cend());
+                assert(MeritIterator != MeritVector.cend());
+                auto const& Question = Game.MatchVector[std::distance(MeritVector.cbegin(), MeritIterator)];
+                Stream << ", best " << Game.AverageSameAnswer(Question) << " (" << Question.ToString() << ")";
+            }
+            Comment = Stream.str();
+        }
         Game.QuestionVector.emplace_back(Question);
         if(Answer.Bulls != Question.ValueSize)
             Game.AutomaticUpdateCharacterStates();
-        Game.MatchVector = OutputBoard();
+        Game.MatchVector = OutputBoard([&] (auto const& BoardQuestion) -> std::string { return BoardQuestion == Question ? Comment : ""; });
         if(Answer.Bulls == Question.ValueSize)
         {
             Game.Reset();

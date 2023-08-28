@@ -8,4 +8,4 @@ If you're good enough, I suppose you will be close to six attempts.
 
 ![](image-a.png)
 
-Now this is so good that if are an addict, you would lose interest in wasting time!
+Now this is so good that if are an addict, you would lose interest in wasting time! Otherwise this will teach you play better.
