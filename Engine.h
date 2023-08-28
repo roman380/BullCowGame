@@ -245,6 +245,15 @@ struct Game
 	{
 		return std::all_of(std::cbegin(CharacterStates), std::cend(CharacterStates), [] (auto&& Element) { return Element == CharacterState::Default; });
 	}
+	double AverageSameAnswer(Combination const& Value) const
+	{
+		if(MatchVector.empty())
+			return 0;
+		size_t Count = 0;
+		for(auto&& AssumeSecret : MatchVector)
+			Count += std::count_if(MatchVector.cbegin(), MatchVector.cend(), [&] (auto&& Match) { return AssumeSecret.Ask(Value) == Match.Ask(Value); });
+		return Count / static_cast<double>(MatchVector.size());
+	}
 
 	Combination Secret;
 	std::vector<Combination> QuestionVector;

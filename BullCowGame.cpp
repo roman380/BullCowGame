@@ -1,6 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 
 #include <iostream>
+#include <iomanip>
 #include <windows.h>
 
 #include "Engine.h"
@@ -109,7 +110,14 @@ int main()
             static size_t constexpr const MatchSizeThreshold = 16;
             if(Game.MatchVector.size() <= MatchSizeThreshold)
                 for(auto&& Match: Game.MatchVector)
-                    std::cout << "  " << Match.ToString() << std::endl;
+                {
+                    std::ostringstream Stream;
+                    Stream << Match.ToString();
+                    Stream << "\033[36m"; // Cyan
+                    Stream << " -> " << std::fixed << std::setprecision(2) << Game.AverageSameAnswer(Match);
+                    Stream << "\033[0m"; // Default
+                    std::cout << "  " << Stream.str() << std::endl;
+                }
             continue;
         }
         if(Input.size() == Combination::ValueSize + 1 && Input[Combination::ValueSize] == '?') // Remaining matches, filtered, if 16 or less
@@ -147,7 +155,14 @@ int main()
             static size_t constexpr const MatchSizeThreshold = 16;
             if(MatchVector.size() <= MatchSizeThreshold)
                 for(auto&& Match: MatchVector)
-                    std::cout << "  " << Match.ToString() << std::endl;
+                {
+                    std::ostringstream Stream;
+                    Stream << Match.ToString();
+                    Stream << "\033[36m"; // Cyan
+                    Stream << " -> " << std::fixed << std::setprecision(2) << Game.AverageSameAnswer(Match);
+                    Stream << "\033[0m"; // Default
+                    std::cout << "  " << Stream.str() << std::endl;
+                }
             continue;
         }
         if(Input == "*") // Reset character states
