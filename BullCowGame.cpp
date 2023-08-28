@@ -112,14 +112,14 @@ int main()
                     std::cout << "  " << Match.ToString() << std::endl;
             continue;
         }
-        if(Input.size() == 1 + Combination::ValueSize && Input[0] == '?') // Remaining matches, filtered, if 16 or less
+        if(Input.size() == Combination::ValueSize + 1 && Input[Combination::ValueSize] == '?') // Remaining matches, filtered, if 16 or less
         {
             std::optional<char> Pattern[Combination::ValueSize];
             bool Invalid = false;
             for(size_t Index = 0; Index < Combination::ValueSize; Index++)
             {
-                auto const Character = Input[1 + Index];
-                if(Character == '_')
+                auto const Character = Input[Index];
+                if(Character == '-')
                     continue;
                 if(!Combination::ValidCharacter(Character))
                 {
@@ -176,22 +176,6 @@ int main()
             OutputBoard();
             continue;
         }
-        if(Input.substr(0, 1) == "-" && Input.size() == 2) // Set absent
-        {
-            auto const Character = Input.substr(1, 1)[0];
-            if(Combination::ValidCharacter(Character))
-                Game.CharacterStates[Character - '0'] = CharacterState::Absent;
-            OutputBoard();
-            continue;
-        }
-        if(Input.substr(0, 1) == "*" && Input.size() == 2) // Set unknown
-        {
-            auto const Character = Input.substr(1, 1)[0];
-            if(Combination::ValidCharacter(Character))
-                Game.CharacterStates[Character - '0'] = CharacterState::Default;
-            OutputBoard();
-            continue;
-        }
         if(Input == "u") // Undo
         {
             if(!Game.QuestionVector.empty())
@@ -199,12 +183,12 @@ int main()
             OutputBoard();
             continue;
         }
-        if(Input.substr(0, 1) == "/") // Try
+        if(Input.size() == Combination::ValueSize + 1 && Input[Combination::ValueSize] == '/') // Try
         {
             Combination TryQuestion;
-            if(!TryQuestion.TryParse(Input.substr(1)))
+            if(!TryQuestion.TryParse(Input.substr(0, Combination::ValueSize)))
             {
-                std::cout << "Not a valid combination " << Input.substr(1) << std::endl;
+                std::cout << "Not a valid combination " << Input.substr(0, Combination::ValueSize) << std::endl;
                 continue;
             }
             std::cout << "--" << std::endl;
@@ -221,11 +205,16 @@ int main()
                     Stream << "\033[7m"; // Invert
                     Stream << "mismatch";
                 } else
-                    Stream << "match";
+                {
+                    //Stream << "match";
+                    continue;
+                }
                 Stream << "\033[0m"; // Default
                 std::cout << Stream.str() << std::endl;
                 Match &= Answer == TryAnswer;
             }
+            if(Match)
+                std::cout << "Matches, go ahead" << std::endl;
             continue;
         }
         Combination Question;
@@ -249,5 +238,8 @@ int main()
 }
 
 /*
+
+- optimal move, how your move looks compared to optimal in terms how much of entropy is reduced
+- list remaining with % for how optimal the attempt would be
 
 */

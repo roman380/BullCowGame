@@ -163,20 +163,7 @@ struct Game
 	{
 		for(auto&& Element: CharacterStates)
 			Element = CharacterState::Default;
-		for(auto&& Question: QuestionVector)
-		{
-			auto const Answer = Secret.Ask(Question);
-			if(Answer.Bulls == 0 && Answer.Cows == 0)
-			{
-				for(auto&& Element: Question.Value)
-					CharacterStates[Element - '0'] = CharacterState::Absent;
-			} else 
-			if(Answer.Bulls + Answer.Cows == Combination::ValueSize)
-			{
-				for(auto&& Element: Question.Value)
-					CharacterStates[Element - '0'] = CharacterState::Present;
-			}
-		}
+		AutomaticUpdateCharacterStates();
 	}
 	static unsigned int DistinctCount(Combination const& QuestionA, Combination const& QuestionB)
 	{
