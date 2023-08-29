@@ -20,9 +20,9 @@ int main()
     Game.Reset();
 
     std::cout << "q to quit, r to restart, u to undo, h for hint" << std::endl;
-    std::cout << "? shows remaining, ?? shows the secret" << std::endl;
+    std::cout << "? shows remaining, c shows the secret" << std::endl;
     std::cout << "+N, -N marks as present or absent, *N resets, * resets all" << std::endl;
-    std::cout << "/<number> tries a combination against previous attempts" << std::endl;
+    std::cout << "try also <combination>/ and <combination>?" << std::endl;
     std::cout << std::endl;
     std::cout << "-- Go ahead" << std::endl;
 
@@ -108,12 +108,12 @@ int main()
             std::cout << "-- Restarted, new game" << std::endl;
             continue;
         }
-        if(Input == "??") // Secret
+        if(Input == "c") // Cheat, show secret
         {
             std::cout << "Secret is " << Game.Secret.ToString() << std::endl;
             continue;
         }
-        if(Input == "?") // Remaining matches, if 16 or less
+        if(Input == "?") // Remaining matches, if 24 or less
         {
             std::cout << Game.MatchVector.size() << " remaining" << std::endl;
             if(Game.MatchVector.size() <= 24)
@@ -128,7 +128,7 @@ int main()
                 }
             continue;
         }
-        if(Input.size() == Combination::ValueSize + 1 && Input[Combination::ValueSize] == '?') // Remaining matches, filtered, if 16 or less
+        if(Input.size() == Combination::ValueSize + 1 && Input[Combination::ValueSize] == '?') // Remaining matches, filtered, if 24 or less
         {
             std::optional<char> Pattern[Combination::ValueSize];
             bool Invalid = false;
@@ -202,7 +202,7 @@ int main()
         {
             if(!Game.QuestionVector.empty())
                 Game.QuestionVector.erase(Game.QuestionVector.end() - 1);
-            OutputBoard();
+            Game.MatchVector = OutputBoard();
             continue;
         }
         if(Input == "h") // Hint
@@ -254,6 +254,14 @@ int main()
                 std::cout << Stream.str() << std::endl;
                 Match &= Answer == TryAnswer;
             }
+            {
+                std::ostringstream Stream;
+                Stream << TryQuestion.ToString();
+                Stream << "\033[36m"; // Cyan
+                Stream << " -> " << std::fixed << std::setprecision(2) << Game.AverageSameAnswer(TryQuestion);
+                Stream << "\033[0m"; // Default
+                std::cout << Stream.str() << std::endl;
+            }
             if(Match)
                 std::cout << "Matches, go ahead" << std::endl;
             continue;
@@ -266,20 +274,23 @@ int main()
         }
         auto const Answer = Game.Secret.Ask(Question);
         std::string Comment;
-        if(Answer.Bulls != Combination::ValueSize && !Game.QuestionVector.empty() && Game.MatchVector.size() < 256)
+        if(Answer.Bulls != Combination::ValueSize && !Game.QuestionVector.empty() && Game.MatchVector.size() <= 512)
         {
             std::ostringstream Stream;
-            Stream << "expected " << std::fixed << std::setprecision(2) << Game.AverageSameAnswer(Question);
-            if(Game.MatchVector.size() < 128)
+            Stream << "-> " << std::fixed << std::setprecision(2) << Game.AverageSameAnswer(Question);
+            if(Game.MatchVector.size() <= 256)
             {
+                auto const Merit = Game.AverageSameAnswer(Question);
                 // WARN: This is not quite accurate, best question does not have to belong to one of the potentially possible combinations
                 std::vector<double> MeritVector;
                 MeritVector.reserve(Game.MatchVector.size());
                 std::for_each(Game.MatchVector.cbegin(), Game.MatchVector.cend(), [&] (auto&& Question) { MeritVector.emplace_back(Game.AverageSameAnswer(Question)); });
                 auto const MeritIterator = std::min_element(MeritVector.cbegin(), MeritVector.cend());
                 assert(MeritIterator != MeritVector.cend());
+                auto const& BestMerit = *MeritIterator;
                 auto const& Question = Game.MatchVector[std::distance(MeritVector.cbegin(), MeritIterator)];
-                Stream << ", best " << Game.AverageSameAnswer(Question) << " (" << Question.ToString() << ")";
+                if(Merit / BestMerit > 1.02) // 2% tolerance for a good move
+                    Stream << ", best " << *MeritIterator << " (" << Question.ToString() << ")";
             }
             Comment = Stream.str();
         }
@@ -297,8 +308,5 @@ int main()
 }
 
 /*
-
-- optimal move, how your move looks compared to optimal in terms how much of entropy is reduced
-- list remaining with % for how optimal the attempt would be
 
 */
