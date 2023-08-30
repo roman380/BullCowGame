@@ -209,12 +209,25 @@ int main()
         {
             if(!Game.QuestionVector.empty() && !Game.MatchVector.empty())
             {
-                std::vector<double> MeritVector;
-                MeritVector.reserve(Game.MatchVector.size());
-                std::for_each(Game.MatchVector.cbegin(), Game.MatchVector.cend(), [&] (auto&& Question) { MeritVector.emplace_back(Game.AverageSameAnswer(Question)); });
-                auto const MeritIterator = std::min_element(MeritVector.cbegin(), MeritVector.cend());
-                assert(MeritIterator != MeritVector.cend());
-                auto const& Question = Game.MatchVector[std::distance(MeritVector.cbegin(), MeritIterator)];
+                Combination Question;
+                if(Game.MatchVector.size() <= 128)
+                {
+                    auto const QuestionVector = Combination::All();
+                    std::vector<double> MeritVector;
+                    MeritVector.reserve(QuestionVector.size());
+                    std::for_each(QuestionVector.cbegin(), QuestionVector.cend(), [&] (auto&& Question) { MeritVector.emplace_back(Game.AverageSameAnswer(Question)); });
+                    auto const MeritIterator = std::min_element(MeritVector.cbegin(), MeritVector.cend());
+                    assert(MeritIterator != MeritVector.cend());
+                    Question = QuestionVector[std::distance(MeritVector.cbegin(), MeritIterator)];
+                } else
+                {
+                    std::vector<double> MeritVector;
+                    MeritVector.reserve(Game.MatchVector.size());
+                    std::for_each(Game.MatchVector.cbegin(), Game.MatchVector.cend(), [&] (auto&& Question) { MeritVector.emplace_back(Game.AverageSameAnswer(Question)); });
+                    auto const MeritIterator = std::min_element(MeritVector.cbegin(), MeritVector.cend());
+                    assert(MeritIterator != MeritVector.cend());
+                    Question = Game.MatchVector[std::distance(MeritVector.cbegin(), MeritIterator)];
+                }
                 std::ostringstream Stream;
                 Stream << "Try " << Question.ToString();
                 Stream << "\033[36m"; // Cyan

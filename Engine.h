@@ -251,7 +251,10 @@ struct Game
 			return 0;
 		size_t Count = 0;
 		for(auto&& AssumeSecret : MatchVector)
-			Count += std::count_if(MatchVector.cbegin(), MatchVector.cend(), [&] (auto&& Match) { return AssumeSecret.Ask(Value) == Match.Ask(Value); });
+		{
+			auto const Answer = AssumeSecret.Ask(Value);
+			Count += std::count_if(MatchVector.cbegin(), MatchVector.cend(), [&] (auto&& Match) { return Answer == Match.Ask(Value); });
+		}
 		return Count / static_cast<double>(MatchVector.size());
 	}
 
